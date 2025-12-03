@@ -1,0 +1,393 @@
+"""
+Generate C code from trained Decision Tree model
+Uses m2cgen to convert the model to Arduino-compatible C code
+"""
+
+import pickle
+import m2cgen as m2c
+import os
+
+print("="*60)
+print("GENERATING C CODE FOR ARDUINO")
+print("="*60)
+
+# ============================================
+# LOAD TRAINED MODEL
+# ============================================
+print("\n📂 Loading trained model...")
+
+model_path = 'models/decision_tree_optimized.pkl'
+scaler_path = 'models/scaler_dt_optimized.pkl'
+
+if not os.path.exists(model_path):
+    print(f"❌ Error: Model not found at {model_path}")
+    print("Please run train_decision_tree_optimized.py first!")
+    exit(1)
+
+with open(model_path, 'rb') as f:
+    model = pickle.load(f)
+    
+with open(scaler_path, 'rb') as f:
+    scaler = pickle.load(f)
+
+print(f"✅ Model loaded successfully")
+print(f"   Tree depth: {model.get_depth()}")
+print(f"   Number of leaves: {model.get_n_leaves()}")
+
+# ============================================
+# GENERATE C CODE
+# ============================================
+print("\n⚙️  Generating C code...")
+
+# Generate the C code for the model
+c_code = m2c.export_to_c(model)
+
+print("✅ C code generated successfully")
+
+# ============================================
+# CREATE HEADER FILE
+# ============================================
+print("\n📝 Creating Arduino header file...")
+
+# Get scaler parameters
+mean = scaler.mean_
+scale = scaler.scale_
+
+# Create complete header file with scaler integration
+header_content = f"""/*
+ * Decision Tree Classifier for Arduino
+ * Generated automatically from trained model
+ * 
+ * Gesture Recognition - Lab 2
+ * Features: wx, wy, wz (gyroscope data)
+ * Classes: 0=clockwise, 1=horizontal_swipe, 2=forward_thrust, 
+ *          3=vertical_updown, 4=wrist_twist
+ */
+
+#ifndef GESTURE_CLASSIFIER_H
+#define GESTURE_CLASSIFIER_H
+
+// Scaler parameters (from StandardScaler)
+const float SCALER_MEAN[3] = {{{mean[0]}f, {mean[1]}f, {mean[2]}f}};
+const float SCALER_SCALE[3] = {{{scale[0]}f, {scale[1]}f, {scale[2]}f}};
+
+// Gesture labels
+const char* GESTURE_NAMES[] = {{
+    "clockwise",
+    "horizontal_swipe", 
+    "forward_thrust",
+    "vertical_updown",
+    "wrist_twist"
+}};
+
+// Apply StandardScaler normalization
+void normalize_features(float* features, float* normalized) {{
+    for (int i = 0; i < 3; i++) {{
+        normalized[i] = (features[i] - SCALER_MEAN[i]) / SCALER_SCALE[i];
+    }}
+}}
+
+// Decision tree prediction function
+{c_code}
+
+// High-level prediction function with normalization
+int predict_gesture(float omega_x, float omega_y, float omega_z) {{
+    float features[3] = {{omega_x, omega_y, omega_z}};
+    float normalized[3];
+    
+    // Normalize input
+    normalize_features(features, normalized);
+    
+    // Predict using decision tree
+    int prediction = score(normalized);
+    
+    return prediction;
+}}
+
+// Get gesture name from prediction
+const char* get_gesture_name(int prediction) {{
+    if (prediction >= 0 && prediction < 5) {{
+        return GESTURE_NAMES[prediction];
+    }}
+    return "unknown";
+}}
+
+#endif // GESTURE_CLASSIFIER_H
+"""
+
+# ============================================
+# SAVE FILES
+# ============================================
+os.makedirs('arduino_code', exist_ok=True)
+
+# Save the header file
+header_path = 'arduino_code/gesture_classifier.h'
+with open(header_path, 'w', encoding='utf-8') as f:
+    f.write(header_content)
+
+print(f"✅ Header file saved: {header_path}")
+
+# Also save raw C code for reference
+raw_c_path = 'arduino_code/model_raw.c'
+with open(raw_c_path, 'w', encoding='utf-8') as f:
+    f.write(c_code)
+    
+print(f"✅ Raw C code saved: {raw_c_path}")
+
+# ============================================
+# CREATE EXAMPLE ARDUINO SKETCH
+# ============================================
+print("\n📝 Creating example Arduino sketch...")
+
+sketch_content = """/*
+ * Gesture Recognition on Arduino
+ * Using Decision Tree Classifier
+ * 
+ * Hardware: Arduino Nano 33 BLE Sense (or compatible with gyroscope)
+ * Sensors: LSM9DS1 IMU (gyroscope)
+ */
+
+#include <Arduino_LSM9DS1.h>
+#include "gesture_classifier.h"
+
+// Gesture detection parameters
+const int SAMPLES_PER_GESTURE = 119;  // Same as training data
+const int SAMPLE_DELAY_MS = 10;       // 100Hz sampling rate
+
+// Data buffer for one gesture
+float gyro_buffer[SAMPLES_PER_GESTURE][3];
+int sample_count = 0;
+
+// State machine
+enum State {
+  IDLE,
+  SAMPLING,
+  PREDICTING
+};
+
+State current_state = IDLE;
+unsigned long last_sample_time = 0;
+
+void setup() {
+  Serial.begin(115200);
+  while (!Serial);
+  
+  Serial.println("=================================");
+  Serial.println("Gesture Recognition - Decision Tree");
+  Serial.println("=================================");
+  
+  // Initialize IMU
+  if (!IMU.begin()) {
+    Serial.println("Failed to initialize IMU!");
+    while (1);
+  }
+  
+  Serial.println("IMU initialized");
+  Serial.println("\\nReady! Move the sensor to record a gesture.");
+  Serial.println("Press any key to start sampling...");
+  Serial.println();
+}
+
+void loop() {
+  switch (current_state) {
+    case IDLE:
+      // Wait for user input to start sampling
+      if (Serial.available() > 0) {
+        Serial.read();  // Clear input
+        start_sampling();
+      }
+      break;
+      
+    case SAMPLING:
+      collect_sample();
+      break;
+      
+    case PREDICTING:
+      make_prediction();
+      current_state = IDLE;
+      Serial.println("\\nPress any key to capture another gesture...");
+      break;
+  }
+}
+
+void start_sampling() {
+  Serial.println("Starting gesture capture...");
+  Serial.println("Perform your gesture NOW!");
+  
+  sample_count = 0;
+  current_state = SAMPLING;
+  last_sample_time = millis();
+}
+
+void collect_sample() {
+  unsigned long current_time = millis();
+  
+  // Sample at fixed rate
+  if (current_time - last_sample_time >= SAMPLE_DELAY_MS) {
+    if (IMU.gyroscopeAvailable()) {
+      float gx, gy, gz;
+      IMU.readGyroscope(gx, gy, gz);
+      
+      // Store in buffer
+      gyro_buffer[sample_count][0] = gx;
+      gyro_buffer[sample_count][1] = gy;
+      gyro_buffer[sample_count][2] = gz;
+      
+      sample_count++;
+      
+      // Show progress
+      if (sample_count % 20 == 0) {
+        Serial.print(".");
+      }
+      
+      // Check if we have enough samples
+      if (sample_count >= SAMPLES_PER_GESTURE) {
+        Serial.println(" Done!");
+        current_state = PREDICTING;
+      }
+    }
+    
+    last_sample_time = current_time;
+  }
+}
+
+void make_prediction() {
+  Serial.println("\\nMaking prediction...");
+  
+  // Calculate mean values for the gesture
+  float mean_gx = 0, mean_gy = 0, mean_gz = 0;
+  
+  for (int i = 0; i < SAMPLES_PER_GESTURE; i++) {
+    mean_gx += gyro_buffer[i][0];
+    mean_gy += gyro_buffer[i][1];
+    mean_gz += gyro_buffer[i][2];
+  }
+  
+  mean_gx /= SAMPLES_PER_GESTURE;
+  mean_gy /= SAMPLES_PER_GESTURE;
+  mean_gz /= SAMPLES_PER_GESTURE;
+  
+  // Make prediction
+  int prediction = predict_gesture(mean_gx, mean_gy, mean_gz);
+  const char* gesture_name = get_gesture_name(prediction);
+  
+  // Display results
+  Serial.println("=================================");
+  Serial.println("PREDICTION RESULTS");
+  Serial.println("=================================");
+  Serial.print("Gesture detected: ");
+  Serial.println(gesture_name);
+  Serial.print("Class ID: ");
+  Serial.println(prediction);
+  Serial.println("=================================");
+  Serial.println();
+  
+  // Show input features (for debugging)
+  Serial.println("Input features (mean values):");
+  Serial.print("  wx: "); Serial.println(mean_gx, 4);
+  Serial.print("  wy: "); Serial.println(mean_gy, 4);
+  Serial.print("  wz: "); Serial.println(mean_gz, 4);
+  Serial.println();
+}
+"""
+
+sketch_path = 'arduino_code/gesture_recognition_dt/gesture_recognition_dt.ino'
+os.makedirs('arduino_code/gesture_recognition_dt', exist_ok=True)
+
+with open(sketch_path, 'w', encoding='utf-8') as f:
+    f.write(sketch_content)
+
+print(f"✅ Arduino sketch saved: {sketch_path}")
+
+# ============================================
+# CREATE README
+# ============================================
+readme_content = """# Arduino Gesture Recognition - Decision Tree
+
+## Files Generated
+
+1. **gesture_classifier.h** - Main header file for Arduino
+   - Contains the decision tree model in C code
+   - Includes StandardScaler normalization
+   - Helper functions for prediction
+
+2. **gesture_recognition_dt.ino** - Example Arduino sketch
+   - Complete working example
+   - Reads gyroscope data from LSM9DS1 IMU
+   - Makes real-time gesture predictions
+
+3. **model_raw.c** - Raw C code from m2cgen (for reference)
+
+## How to Use
+
+### Step 1: Upload to Arduino
+
+1. Open `gesture_recognition_dt/gesture_recognition_dt.ino` in Arduino IDE
+2. Make sure `gesture_classifier.h` is in the same folder
+3. Install required library: `Arduino_LSM9DS1`
+4. Select your board (e.g., Arduino Nano 33 BLE Sense)
+5. Upload the sketch
+
+### Step 2: Test Gesture Recognition
+
+1. Open Serial Monitor (115200 baud)
+2. Press any key to start sampling
+3. Perform a gesture within ~1.2 seconds
+4. View the prediction result
+
+## Gesture Classes
+
+- 0: clockwise
+- 1: horizontal_swipe
+- 2: forward_thrust
+- 3: vertical_updown
+- 4: wrist_twist
+
+## Model Information
+
+- Algorithm: Decision Tree with optimized hyperparameters
+- Features: 3 (wx, wy, wz from gyroscope)
+- Normalization: StandardScaler (included in header file)
+- Sampling: 119 samples per gesture at 100Hz
+
+## Customization
+
+You can modify the example sketch to:
+- Change sampling parameters (SAMPLES_PER_GESTURE, SAMPLE_DELAY_MS)
+- Use different feature aggregation (max, std, etc. instead of mean)
+- Add confidence scores or multi-class probabilities
+- Integrate with other sensors or actuators
+
+## Hardware Requirements
+
+- Arduino Nano 33 BLE Sense (recommended)
+- Or any Arduino with LSM9DS1 or compatible IMU
+
+"""
+
+readme_path = 'arduino_code/README.md'
+with open(readme_path, 'w', encoding='utf-8') as f:
+    f.write(readme_content)
+    
+print(f"✅ README saved: {readme_path}")
+
+# ============================================
+# SUMMARY
+# ============================================
+print("\n" + "="*60)
+print("📦 FILES GENERATED")
+print("="*60)
+print(f"  1. {header_path}")
+print(f"  2. {sketch_path}")
+print(f"  3. {raw_c_path}")
+print(f"  4. {readme_path}")
+print("="*60)
+
+print("\n🎯 NEXT STEPS:")
+print("  1. Copy 'gesture_classifier.h' to your Arduino sketch folder")
+print("  2. Open 'gesture_recognition_dt.ino' in Arduino IDE")
+print("  3. Install Arduino_LSM9DS1 library")
+print("  4. Upload to your Arduino board")
+print("  5. Test with real gestures!")
+
+print("\n✅ C code generation complete!")
