@@ -6,13 +6,14 @@
    - Contains the decision tree model in C code
    - Includes StandardScaler normalization
    - Helper functions for prediction
+   - **Fixed for Arduino compatibility** (uses float, not double)
 
 2. **gesture_recognition_dt.ino** - Example Arduino sketch
    - Complete working example
    - Reads gyroscope data from LSM9DS1 IMU
    - Makes real-time gesture predictions
 
-3. **model_raw.c** - Raw C code from m2cgen (for reference)
+3. **model_raw_fixed.c** - Fixed C code from m2cgen (for reference)
 
 ## How to Use
 
@@ -46,13 +47,12 @@
 - Normalization: StandardScaler (included in header file)
 - Sampling: 119 samples per gesture at 100Hz
 
-## Customization
+## Arduino Compatibility Fixes
 
-You can modify the example sketch to:
-- Change sampling parameters (SAMPLES_PER_GESTURE, SAMPLE_DELAY_MS)
-- Use different feature aggregation (max, std, etc. instead of mean)
-- Add confidence scores or multi-class probabilities
-- Integrate with other sensors or actuators
+This version includes fixes for Arduino compiler compatibility:
+- Changed `double` to `float` (Arduino works better with float)
+- Fixed array initialization in memcpy calls
+- Proper function signatures
 
 ## Hardware Requirements
 

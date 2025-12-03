@@ -1,39 +1,3 @@
-/*
- * Decision Tree Classifier for Arduino
- * Generated automatically from trained model
- * 
- * Gesture Recognition - Lab 2
- * Features: wx, wy, wz (gyroscope data)
- * Classes: 0=clockwise, 1=horizontal_swipe, 2=forward_thrust, 
- *          3=vertical_updown, 4=wrist_twist
- */
-
-#ifndef GESTURE_CLASSIFIER_H
-#define GESTURE_CLASSIFIER_H
-
-#include <string.h>  // For memcpy
-
-// Scaler parameters (from StandardScaler)
-const float SCALER_MEAN[3] = {0.25840647934887806f, 0.17319652791701426f, -0.2987822896279074f};
-const float SCALER_SCALE[3] = {1.9529634847972555f, 2.143301655951765f, 3.173223810876215f};
-
-// Gesture labels
-const char* GESTURE_NAMES[] = {
-    "clockwise",
-    "horizontal_swipe", 
-    "forward_thrust",
-    "vertical_updown",
-    "wrist_twist"
-};
-
-// Apply StandardScaler normalization
-void normalize_features(float* features, float* normalized) {
-    for (int i = 0; i < 3; i++) {
-        normalized[i] = (features[i] - SCALER_MEAN[i]) / SCALER_SCALE[i];
-    }
-}
-
-// Decision tree prediction function (returns probabilities)
 #include <string.h>
 void score(float * input, float * output) {
     float var0[5];
@@ -2298,39 +2262,3 @@ void score(float * input, float * output) {
     }
     memcpy(output, var0, 5 * sizeof(float));
 }
-
-
-// High-level prediction function with normalization
-int predict_gesture(float omega_x, float omega_y, float omega_z) {
-    float features[3] = {omega_x, omega_y, omega_z};
-    float normalized[3];
-    float probabilities[5];
-    
-    // Normalize input
-    normalize_features(features, normalized);
-    
-    // Get probabilities from decision tree
-    score(normalized, probabilities);
-    
-    // Find class with highest probability
-    int prediction = 0;
-    float max_prob = probabilities[0];
-    for (int i = 1; i < 5; i++) {
-        if (probabilities[i] > max_prob) {
-            max_prob = probabilities[i];
-            prediction = i;
-        }
-    }
-    
-    return prediction;
-}
-
-// Get gesture name from prediction
-const char* get_gesture_name(int prediction) {
-    if (prediction >= 0 && prediction < 5) {
-        return GESTURE_NAMES[prediction];
-    }
-    return "unknown";
-}
-
-#endif // GESTURE_CLASSIFIER_H

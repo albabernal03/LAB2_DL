@@ -1,14 +1,15 @@
 """
-Generate C code from trained Decision Tree model
-Uses m2cgen to convert the model to Arduino-compatible C code
+Generate Arduino-compatible C code from trained Decision Tree model
+Fixed version that handles Arduino compiler constraints
 """
 
 import pickle
 import m2cgen as m2c
 import os
+import re
 
 print("="*60)
-print("GENERATING C CODE FOR ARDUINO")
+print("GENERATING ARDUINO-COMPATIBLE C CODE")
 print("="*60)
 
 # ============================================
@@ -40,20 +41,54 @@ print(f"   Number of leaves: {model.get_n_leaves()}")
 print("\n⚙️  Generating C code...")
 
 # Generate the C code for the model
-c_code = m2c.export_to_c(model)
+c_code_raw = m2c.export_to_c(model)
 
-print("✅ C code generated successfully")
+print("✅ Raw C code generated")
+print("🔧 Fixing Arduino compatibility issues...")
+
+# ============================================
+# FIX ARDUINO COMPATIBILITY
+# ============================================
+
+# 1. Replace double with float
+c_code = c_code_raw.replace('double', 'float')
+
+# 2. Fix the memcpy array initialization issues
+# Pattern: memcpy(var0, (float[]){values}, size)
+# Replace with proper array declaration and copy
+
+def replace_memcpy(match):
+    """Replace memcpy with array literal to proper C code"""
+    indent = match.group(1)
+    values = match.group(2)
+    
+    # Create static array declaration
+    result = f"{indent}static const float temp[] = {{{values}}};\n"
+    result += f"{indent}memcpy(var0, temp, 5 * sizeof(float));"
+    
+    return result
+
+# Find all memcpy patterns and replace them
+pattern = r'(\s+)memcpy\(var0, \(float\[\]\)\{([^}]+)\}, 5 \* sizeof\(float\)\);'
+c_code = re.sub(pattern, replace_memcpy, c_code)
+
+# 3. Fix function signature to use float*
+c_code = re.sub(r'void score\(float\* input, float\* output\)', 
+                'void score(float* input, float* output)', c_code)
+
+print("✅ Code fixed for Arduino compatibility")
+
+# ============================================
+# GET SCALER PARAMETERS
+# ============================================
+mean = scaler.mean_
+scale = scaler.scale_
 
 # ============================================
 # CREATE HEADER FILE
 # ============================================
 print("\n📝 Creating Arduino header file...")
 
-# Get scaler parameters
-mean = scaler.mean_
-scale = scaler.scale_
-
-# Create complete header file with scaler integration
 header_content = f"""/*
  * Decision Tree Classifier for Arduino
  * Generated automatically from trained model
@@ -66,6 +101,8 @@ header_content = f"""/*
 
 #ifndef GESTURE_CLASSIFIER_H
 #define GESTURE_CLASSIFIER_H
+
+#include <string.h>  // For memcpy
 
 // Scaler parameters (from StandardScaler)
 const float SCALER_MEAN[3] = {{{mean[0]}f, {mean[1]}f, {mean[2]}f}};
@@ -87,19 +124,30 @@ void normalize_features(float* features, float* normalized) {{
     }}
 }}
 
-// Decision tree prediction function
+// Decision tree prediction function (returns probabilities)
 {c_code}
 
 // High-level prediction function with normalization
 int predict_gesture(float omega_x, float omega_y, float omega_z) {{
     float features[3] = {{omega_x, omega_y, omega_z}};
     float normalized[3];
+    float probabilities[5];
     
     // Normalize input
     normalize_features(features, normalized);
     
-    // Predict using decision tree
-    int prediction = score(normalized);
+    // Get probabilities from decision tree
+    score(normalized, probabilities);
+    
+    // Find class with highest probability
+    int prediction = 0;
+    float max_prob = probabilities[0];
+    for (int i = 1; i < 5; i++) {{
+        if (probabilities[i] > max_prob) {{
+            max_prob = probabilities[i];
+            prediction = i;
+        }}
+    }}
     
     return prediction;
 }}
@@ -128,11 +176,11 @@ with open(header_path, 'w', encoding='utf-8') as f:
 print(f"✅ Header file saved: {header_path}")
 
 # Also save raw C code for reference
-raw_c_path = 'arduino_code/model_raw.c'
+raw_c_path = 'arduino_code/model_raw_fixed.c'
 with open(raw_c_path, 'w', encoding='utf-8') as f:
     f.write(c_code)
     
-print(f"✅ Raw C code saved: {raw_c_path}")
+print(f"✅ Fixed C code saved: {raw_c_path}")
 
 # ============================================
 # CREATE EXAMPLE ARDUINO SKETCH
@@ -310,13 +358,14 @@ readme_content = """# Arduino Gesture Recognition - Decision Tree
    - Contains the decision tree model in C code
    - Includes StandardScaler normalization
    - Helper functions for prediction
+   - **Fixed for Arduino compatibility** (uses float, not double)
 
 2. **gesture_recognition_dt.ino** - Example Arduino sketch
    - Complete working example
    - Reads gyroscope data from LSM9DS1 IMU
    - Makes real-time gesture predictions
 
-3. **model_raw.c** - Raw C code from m2cgen (for reference)
+3. **model_raw_fixed.c** - Fixed C code from m2cgen (for reference)
 
 ## How to Use
 
@@ -350,13 +399,12 @@ readme_content = """# Arduino Gesture Recognition - Decision Tree
 - Normalization: StandardScaler (included in header file)
 - Sampling: 119 samples per gesture at 100Hz
 
-## Customization
+## Arduino Compatibility Fixes
 
-You can modify the example sketch to:
-- Change sampling parameters (SAMPLES_PER_GESTURE, SAMPLE_DELAY_MS)
-- Use different feature aggregation (max, std, etc. instead of mean)
-- Add confidence scores or multi-class probabilities
-- Integrate with other sensors or actuators
+This version includes fixes for Arduino compiler compatibility:
+- Changed `double` to `float` (Arduino works better with float)
+- Fixed array initialization in memcpy calls
+- Proper function signatures
 
 ## Hardware Requirements
 
@@ -390,4 +438,4 @@ print("  3. Install Arduino_LSM9DS1 library")
 print("  4. Upload to your Arduino board")
 print("  5. Test with real gestures!")
 
-print("\n✅ C code generation complete!")
+print("\n✅ Arduino-compatible C code generation complete!")
