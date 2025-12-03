@@ -1,7 +1,7 @@
 
 /*
- * Decision Tree para clasificación de gestos
- * Generado automáticamente desde modelo entrenado
+ * Decision Tree para clasificaciï¿½n de gestos
+ * Generado automï¿½ticamente desde modelo entrenado
  * 
  * Uso:
  *   1. Calcular mean, std, median de gyro_x, gyro_y, gyro_z
@@ -21,11 +21,11 @@ const char* GESTURE_NAMES[] = {
     "wrist_twist"
 };
 
-// Parámetros del scaler (StandardScaler)
+// Parï¿½metros del scaler (StandardScaler)
 const float SCALER_MEAN[] = {0.258406, 0.173197, -0.298782};
 const float SCALER_SCALE[] = {1.952963, 2.143302, 3.173224};
 
-// Función para normalizar features
+// Funciï¿½n para normalizar features
 void normalize_features(float* features, int n_features) {
     for (int i = 0; i < n_features; i++) {
         features[i] = (features[i] - SCALER_MEAN[i]) / SCALER_SCALE[i];
@@ -33,7 +33,7 @@ void normalize_features(float* features, int n_features) {
 }
 
 
-// Función de predicción del árbol de decisión
+// Funciï¿½n de predicciï¿½n del ï¿½rbol de decisiï¿½n
 // Input: features[3] = {gyro_x, gyro_y, gyro_z} (ya normalizados)
 // Output: clase predicha (0-4)
 int predict_gesture(float* features) {
@@ -1544,14 +1544,14 @@ if (features[0] <= 0.733057f) { // gyro_x
 }
 }
 
-// Función completa: desde features raw hasta predicción
+// Funciï¿½n completa: desde features raw hasta predicciï¿½n
 int classify_gesture(float gyro_x, float gyro_y, float gyro_z) {
     float features[3] = {gyro_x, gyro_y, gyro_z};
     normalize_features(features, 3);
     return predict_gesture(features);
 }
 
-// Función para obtener el nombre del gesto
+// Funciï¿½n para obtener el nombre del gesto
 const char* get_gesture_name(int gesture_id) {
     if (gesture_id >= 0 && gesture_id < 5) {
         return GESTURE_NAMES[gesture_id];
