@@ -32,7 +32,7 @@ np.random.seed(42)
 tf.random.set_seed(42)
 
 # Configuration
-BASE_DIR = "."
+BASE_DIR = "../.."  # Point to LAB2_DL root directory
 
 GESTURE_DIRS = [
     "clockwise_dataset",
@@ -198,17 +198,19 @@ X_test_scaled = scaler.transform(X_test)
 print("\n🔍 Starting hyperparameter optimization...")
 print("Testing different architectures...\n")
 
-# Define EXPANDED parameter grid for exhaustive search
+# Define OPTIMIZED parameter grid (reduced but still exhaustive)
 param_grid = {
-    'hidden_layers': [2, 3, 4],              # 3 options
-    'neurons': [32, 64, 128, 256],           # 4 options
-    'dropout_rate': [0.2, 0.3, 0.4, 0.5],    # 4 options
-    'learning_rate': [0.0001, 0.0005, 0.001, 0.005],  # 4 options
-    'batch_size': [16, 32, 64],              # 3 options
-    'l2_lambda': [0.0, 0.001, 0.01, 0.1],    # 4 options (NEW)
-    'activation': ['relu', 'elu', 'selu'],   # 3 options (NEW)
-    'optimizer': ['adam', 'rmsprop']         # 2 options (NEW)
+    'hidden_layers': [2, 3],                     # 2 options (reduced from 3)
+    'neurons': [64, 128],                        # 2 options (reduced from 4)
+    'dropout_rate': [0.3, 0.4, 0.5],             # 3 options (reduced from 4)
+    'learning_rate': [0.0001, 0.001],            # 2 options (reduced from 4)
+    'batch_size': [32, 64],                      # 2 options (reduced from 3)
+    'l2_lambda': [0.0, 0.001, 0.01],             # 3 options (reduced from 4)
+    'activation': ['relu', 'elu'],               # 2 options (reduced from 3)
+    'optimizer': ['adam']                        # 1 option (reduced from 2)
 }
+
+# Total: 2 × 2 × 3 × 2 × 2 × 3 × 2 × 1 = 576 combinations (~30-60 min)
 
 # Generate all combinations
 param_combinations = list(product(
