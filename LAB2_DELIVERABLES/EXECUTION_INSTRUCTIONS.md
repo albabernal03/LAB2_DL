@@ -1,17 +1,17 @@
-# LAB2_DELIVERABLES - Instrucciones de Ejecución
+# LAB2_DELIVERABLES - Execution Instructions
 
-## ⚠️ IMPORTANTE: Cómo ejecutar los scripts
+## ⚠️ IMPORTANT: How to Execute the Scripts
 
-### Estructura del repositorio
+### Repository Structure
 
 ```
 LAB2_DL/
-├── LAB2_DELIVERABLES/          ← Carpeta de entrega
+├── LAB2_DELIVERABLES/          ← Deliverables folder
 │   ├── README.md
 │   ├── INDEX.md
 │   ├── QUICK_START.md
 │   ├── reports/
-│   │   └── COMPREHENSIVE_REPORT.md  ⭐ LEER PRIMERO
+│   │   └── COMPREHENSIVE_REPORT.md  ⭐ READ FIRST
 │   ├── optimized_models/
 │   │   ├── train_neural_network_optimized.py
 │   │   ├── train_lstm_optimized.py
@@ -23,127 +23,127 @@ LAB2_DL/
 │       ├── train_decision_tree_optimized.py
 │       └── train_random_forest.py
 │
-├── clockwise_dataset/          ← Datos necesarios
+├── clockwise_dataset/          ← Required data
 ├── horizontal_swipe_dataset/
 ├── forward_thrust_dataset/
 ├── vertical_updown_dataset/
 ├── wrist_twist_dataset/
-└── extra/                      ← Archivos auxiliares (no necesarios)
+└── extra/                      ← Auxiliary files (not required)
 ```
 
 ---
 
-## 📖 Para Evaluar (SIN ejecutar código)
+## 📖 For Evaluation (WITHOUT executing code)
 
-**Leer estos documentos en orden:**
+**Read these documents in order:**
 
-1. **`README.md`** (5 min) - Vista general
-2. **`reports/COMPREHENSIVE_REPORT.md`** (20-30 min) ⭐ **DOCUMENTO PRINCIPAL**
-3. **`INDEX.md`** (opcional) - Índice de archivos
+1. **`README.md`** (5 min) - Overview
+2. **`reports/COMPREHENSIVE_REPORT.md`** (20-30 min) ⭐ **MAIN DOCUMENT**
+3. **`INDEX.md`** (optional) - File index
 
-El **COMPREHENSIVE_REPORT.md** contiene:
-- ✅ Explicación de las 4 arquitecturas (FNN, LSTM, CNN, Hybrid)
-- ✅ Motivación de cada elección
-- ✅ Estrategia de búsqueda de hiperparámetros (1,533 combinaciones)
-- ✅ Justificación científica de RandomizedSearch (Bergstra & Bengio, 2012)
-- ✅ 7 técnicas anti-overfitting implementadas
-- ✅ Análisis completo de resultados
+The **COMPREHENSIVE_REPORT.md** contains:
+- ✅ Explanation of the 4 architectures (FNN, LSTM, CNN, Hybrid)
+- ✅ Motivation for each choice
+- ✅ Hyperparameter search strategy (1,533 combinations)
+- ✅ Scientific justification for RandomizedSearch (Bergstra & Bengio, 2012)
+- ✅ 7 anti-overfitting techniques implemented
+- ✅ Complete results analysis
 
 ---
 
-## 🚀 Para Ejecutar los Scripts
+## 🚀 To Execute the Scripts
 
-### Requisitos Previos
+### Prerequisites
 
 ```bash
-# 1. Clonar el repositorio
+# 1. Clone the repository
 git clone https://github.com/albabernal03/LAB2_DL.git
 cd LAB2_DL
 
-# 2. Crear entorno virtual
+# 2. Create virtual environment
 python -m venv venv
 
-# 3. Activar entorno (Windows)
+# 3. Activate environment (Windows)
 venv\Scripts\activate
 
-# 4. Instalar dependencias
+# 4. Install dependencies
 pip install tensorflow scikit-learn numpy pandas matplotlib seaborn
 ```
 
-### Ejecución
+### Execution
 
-**IMPORTANTE:** Los scripts deben ejecutarse desde la carpeta `optimized_models`:
+**IMPORTANT:** Scripts must be executed from the `optimized_models` folder:
 
 ```bash
 cd LAB2_DELIVERABLES/optimized_models
 
-# Ejecutar modelos (uno a uno)
+# Run models (one by one)
 python train_neural_network_optimized.py  # FNN: 30-60 min
 python train_lstm_optimized.py            # LSTM: 20-30 min
 python train_cnn_optimized.py             # CNN: 30-45 min
-python train_hybrid_optimized.py          # Hybrid: 2-4 horas
+python train_hybrid_optimized.py          # Hybrid: 2-4 hours
 
-# Comparar resultados (después de entrenar todos)
+# Compare results (after training all)
 python compare_all_models.py
 ```
 
-### Dónde se guardan los resultados
+### Where Results Are Saved
 
-Los scripts crean automáticamente estas carpetas:
+Scripts automatically create these folders:
 
 ```
 LAB2_DELIVERABLES/optimized_models/
-├── models/                    ← Modelos entrenados (.keras, .pkl)
-└── (los scripts buscan datos en ../../*_dataset/)
+├── models/                    ← Trained models (.keras, .pkl)
+└── (scripts look for data in ../../*_dataset/)
 ```
 
-Y también usan:
+And also use:
 ```
 LAB2_DL/
-├── models_dl/                 ← Resultados de LSTM/CNN/Hybrid
-└── figures/                   ← Visualizaciones
+├── models_dl/                 ← LSTM/CNN/Hybrid results
+└── figures/                   ← Visualizations
 ```
 
 ---
 
-## ✅ Verificación Rápida
+## ✅ Quick Verification
 
-Para verificar que todo funciona sin entrenar (test rápido):
+To verify everything works without training (quick test):
 
 ```bash
 cd LAB2_DELIVERABLES/optimized_models
-python -c "import tensorflow as tf; import sklearn; print('✅ Dependencias OK')"
+python -c "import tensorflow as tf; import sklearn; print('✅ Dependencies OK')"
 ```
 
 ---
 
-## 📊 Resultados Esperados
+## 📊 Expected Results
 
-Después de ejecutar todos los scripts:
+After executing all scripts:
 
-### Modelos guardados
+### Saved Models
 - `models/neural_network_optimized.keras`
 - `../../models_dl/LSTM_optimized_best.keras`
 - `../../models_dl/CNN1D_optimized_best.keras`
 - `../../models_dl/Hybrid_optimized_best.keras`
 
-### Resultados de búsqueda
-- `models/nn_hyperparameter_results.pkl` (FNN: 576 combinaciones)
-- `../../models_dl/lstm_hyperparameter_results.pkl` (LSTM: 50 combinaciones)
-- `../../models_dl/cnn_hyperparameter_results.pkl` (CNN: 75 combinaciones)
-- `../../models_dl/hybrid_hyperparameter_results.pkl` (Hybrid: 512 combinaciones)
+### Search Results
+- `models/nn_hyperparameter_results.pkl` (FNN: 576 combinations)
+- `../../models_dl/lstm_hyperparameter_results.pkl` (LSTM: 50 combinations)
+- `../../models_dl/cnn_hyperparameter_results.pkl` (CNN: 75 combinations)
+- `../../models_dl/hybrid_hyperparameter_results.pkl` (Hybrid: 512 combinations)
 
-### Visualizaciones
+### Visualizations
 - `../../figures/model_comparison_summary.png`
 - `../../figures/l2_regularization_analysis.png`
 - `../../figures/overfitting_analysis_all_models.png`
 
 ---
 
-## ⏱️ Tiempos de Ejecución
+## ⏱️ Execution Times
 
-| Script | Combinaciones | Tiempo (CPU) | Tiempo (GPU) |
-|--------|---------------|--------------|--------------|
+| Script | Combinations | Time (CPU) | Time (GPU) |
+|--------|--------------|------------|------------|
 | FNN | 576 | 30-60 min | 10-20 min |
 | LSTM | 50 | 20-30 min | 5-10 min |
 | CNN | 75 | 30-45 min | 10-15 min |
@@ -152,7 +152,7 @@ Después de ejecutar todos los scripts:
 
 ---
 
-## 🆘 Solución de Problemas
+## 🆘 Troubleshooting
 
 ### Error: "No module named 'tensorflow'"
 ```bash
@@ -160,7 +160,7 @@ pip install tensorflow
 ```
 
 ### Error: "No such file or directory: '../../clockwise_dataset'"
-**Solución:** Asegúrate de ejecutar desde `LAB2_DELIVERABLES/optimized_models/`
+**Solution:** Make sure to run from `LAB2_DELIVERABLES/optimized_models/`
 
 ### Error: "No module named 'seaborn'"
 ```bash
@@ -169,11 +169,11 @@ pip install seaborn
 
 ---
 
-## 📧 Contacto
+## 📧 Contact
 
-**Autor:** Alba Bernal  
-**Repositorio:** https://github.com/albabernal03/LAB2_DL  
-**Fecha:** Enero 2026
+**Author:** Alba Bernal  
+**Repository:** https://github.com/albabernal03/LAB2_DL  
+**Date:** January 2026
 
 ---
 
