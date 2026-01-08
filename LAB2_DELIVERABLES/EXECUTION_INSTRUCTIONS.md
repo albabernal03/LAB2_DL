@@ -177,18 +177,18 @@ pip install seaborn
 
 ---
 
-## 🎯 Resumen para el Profesor
+## 🎯 Summary for Evaluators
 
-**Para evaluar SIN ejecutar:**
-- Leer `reports/COMPREHENSIVE_REPORT.md` (documento principal)
-- Revisar código en `optimized_models/` (bien comentado)
+**To evaluate WITHOUT executing:**
+- Read `reports/COMPREHENSIVE_REPORT.md` (main document)
+- Review code in `optimized_models/` (well-commented)
 
-**Para ejecutar (opcional):**
-- Seguir instrucciones de "Ejecución" arriba
-- Tiempo total: 4-6 horas (CPU) o 1.5-2.5 horas (GPU)
+**To execute (optional):**
+- Follow "Execution" instructions above
+- Total time: 4-6 hours (CPU) or 1.5-2.5 hours (GPU)
 
-**Todo cumple requisitos del lab:**
-- ✅ 4 tipos de redes neuronales (FNN, LSTM, CNN, Hybrid)
-- ✅ Elección motivada (ver Sección 3 del reporte)
-- ✅ Búsqueda exhaustiva: 1,533 combinaciones (Grid + RandomizedSearch)
-- ✅ Anti-overfitting: L2, Dropout, Early Stopping, etc.
+**All lab requirements met:**
+- ✅ 4 types of neural networks (FNN, LSTM, CNN, Hybrid)
+- ✅ Motivated choice (see Section 3 of report)
+- ✅ Exhaustive search: 1,533 combinations (Grid + RandomizedSearch)
+- ✅ Overfitting prevention: L2, Dropout, Early Stopping, etc.
